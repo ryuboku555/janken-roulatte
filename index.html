@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>じゃんけんルーレット</title>
+<style>
+  :root {
+    --bg: #0f1220;
+    --panel: #171a2a;
+    --panel-2: #1f2340;
+    --text: #e8ebff;
+    --muted: #a8b1d8;
+    --accent: #6aa6ff;
+    --win: #2ecc71;
+    --lose: #ff5c5c;
+    --draw: #ffcc4d;
+  }
+  html,body {
+    margin: 0;
+    height: 100%;
+    background: radial-gradient(1200px 800px at 10% 0%, #121633, #0c0f20 60%, #090b17);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  .wrap {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+  .card {
+    width: min(720px, 92vw);
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    padding: 20px;
+  }
+  .title {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; letter-spacing: .02em;
+    margin: 6px 4px 18px;
+  }
+  .title .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 16px var(--accent);
+  }
+  .arena {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr;
+    align-items: center;
+    gap: 12px;
+  }
+  .panel {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 180px;
+    display: grid;
+    place-items: center;
+  }
+  .vs {
+    text-align: center;
+    font-weight: 900;
+    color: var(--muted);
+    user-select: none;
+  }
+  .hand {
+    font-size: clamp(56px, 10vw, 96px);
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));
+    transition: transform .08s ease;
+  }
+  .label {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .controls {
+    display: flex; flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  button {
+    appearance: none;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    cursor: pointer;
+    transition: transform .06s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  button[disabled] { opacity: .5; cursor: not-allowed; }
+  .primary { background: linear-gradient(180deg, #5f9bff, #4285ff); border-color: rgba(66,133,255,.4); color: #fff; }
+  .danger { background: linear-gradient(180deg, #ff7575, #ff5c5c); border-color: rgba(255,92,92,.4); color: #fff; }
+  .ghost { background: rgba(255,255,255,0.04); }
+  .result {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .r-win { background: rgba(46,204,113,.12); border-color: rgba(46,204,113,.4); color: #c7f5dc; }
+  .r-lose { background: rgba(255,92,92,.12); border-color: rgba(255,92,92,.4); color: #ffd6d6;}
+  .r-draw { background: rgba(255,204,77,.12); border-color: rgba(255,204,77,.4); color: #fff0c2;}
+  .tips {
+    margin-top: 8px; color: var(--muted); font-size: 13px;
+  }
+  .stack {
+    display: grid; gap: 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="title"><span class="dot"></span><div>じゃんけんルーレット</div></div>
+
+      <div class="arena">
+        <div class="panel stack">
+          <div id="playerHand" class="hand" aria-live="polite">✊</div>
+          <div class="label">あなた</div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="panel stack">
+          <div id="cpuHand" class="hand">❔</div>
+          <div class="label">CPU</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="handBtn" data-hand="rock">✊ ぐー</button>
+        <button class="handBtn" data-hand="scissors">✌️ ちょき</button>
+        <button class="handBtn" data-hand="paper">🖐️ ぱー</button>
+        <button id="againBtn" class="ghost" disabled>もう一回</button>
+      </div>
+
+      <div id="result" class="result r-draw" style="display:none;">結果がここに表示されます</div>
+      <div class="tips">あなたの手を選ぶと、CPUはランダムで決定します。</div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const HANDS = [
+    { key: 'rock', emoji: '✊', name: 'ぐー' },
+    { key: 'scissors', emoji: '✌️', name: 'ちょき' },
+    { key: 'paper', emoji: '🖐️', name: 'ぱー' }
+  ];
+
+  const $ = (sel) => document.querySelector(sel);
+  const playerEl = $('#playerHand');
+  const cpuEl = $('#cpuHand');
+  const resultEl = $('#result');
+  const againBtn = $('#againBtn');
+  const handButtons = Array.from(document.querySelectorAll('.handBtn'));
+
+  let cpuSpinTimer = null;
+  let cpuSpinning = false;
+
+  function setHandButtonsDisabled(disabled) {
+    handButtons.forEach(btn => btn.disabled = disabled);
+  }
+
+  function startCpuSpin() {
+    if (cpuSpinning) return;
+    cpuSpinning = true;
+    cpuEl.textContent = '❔';
+    
+    let cpuIdx = 0;
+    cpuSpinTimer = setInterval(() => {
+      cpuIdx = (cpuIdx + 1) % HANDS.length;
+      cpuEl.textContent = HANDS[cpuIdx].emoji;
+      cpuEl.style.transform = `scale(${1 + Math.sin(Date.now()/100)*0.05})`;
+    }, 80);
+  }
+
+  function stopCpuSpin() {
+    if (!cpuSpinning) return;
+    cpuSpinning = false;
+    clearInterval(cpuSpinTimer);
+    cpuSpinTimer = null;
+    cpuEl.style.transform = 'scale(1)';
+  }
+
+  function judge(p, c) {
+    if (p === c) return 'draw';
+    if (
+      (p === 'rock' && c === 'scissors') ||
+      (p === 'scissors' && c === 'paper') ||
+      (p === 'paper' && c === 'rock')
+    ) return 'win';
+    return 'lose';
+  }
+
+  function showResult(type, player, cpu) {
+    const map = {
+      win: { cls: 'r-win', text: 'あなたの勝ち！' },
+      lose: { cls: 'r-lose', text: 'あなたの負け…' },
+      draw: { cls: 'r-draw', text: 'あいこ！' }
+    };
+    resultEl.className = `result ${map[type].cls}`;
+    resultEl.innerText = `${map[type].text}（あなた: ${player.name} / CPU: ${cpu.name}）`;
+    resultEl.style.display = 'block';
+  }
+
+  function resetAll() {
+    stopCpuSpin();
+    playerEl.textContent = HANDS[0].emoji;
+    playerEl.style.transform = 'scale(1)';
+    cpuEl.textContent = '❔';
+    resultEl.style.display = 'none';
+    setHandButtonsDisabled(false);
+    againBtn.disabled = true;
+    startCpuSpin(); // リセット時にCPU回転開始
+  }
+
+  function getHandByKey(key) {
+    return HANDS.find(h => h.key === key) || HANDS[0];
+  }
+
+  function chooseHand(handKey) {
+    const player = getHandByKey(handKey);
+    playerEl.textContent = player.emoji;
+    playerEl.style.transform = 'scale(1)';
+    
+    // CPU回転を止めて最終的な手を決定
+    stopCpuSpin();
+    const cpu = HANDS[Math.floor(Math.random() * HANDS.length)];
+    cpuEl.textContent = cpu.emoji;
+    
+    const outcome = judge(player.key, cpu.key);
+    showResult(outcome, player, cpu);
+    setHandButtonsDisabled(true);
+    againBtn.disabled = false;
+  }
+
+  // 初期状態
+  setHandButtonsDisabled(false);
+  againBtn.disabled = true;
+  startCpuSpin(); // ページ読み込み時にCPU回転開始
+
+  // イベント
+  handButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-hand');
+      chooseHand(key);
+    });
+  });
+  againBtn.addEventListener('click', () => {
+    resetAll();
+  });
+
+  // キーボード操作: R = Again, 1/2/3 = ぐー/ちょき/ぱー
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'r') {
+      resetAll();
+    } else if (!againBtn.disabled) {
+      // 試合終了時のみ有効なキー処理はなし
+    } else {
+      if (k === '1') chooseHand('rock');
+      if (k === '2') chooseHand('scissors');
+      if (k === '3') chooseHand('paper');
+    }
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
