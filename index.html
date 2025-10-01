@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>じゃんけんルーレット</title>
+<title>くそくそかすかすぷろぐらむ　じゃんけんルーレット</title>
 <style>
   :root {
     --bg: #0f1220;
@@ -146,7 +146,7 @@
       </div>
 
       <div id="result" class="result r-draw" style="display:none;">結果がここに表示されます</div>
-      <div class="tips">あなたの手を選ぶと、CPUはランダムで決定します。</div>
+      <div class="tips">お前の手を選ぶと、CPUはランダムで決定します。</div>
     </div>
   </div>
 
@@ -205,9 +205,9 @@
 
   function showResult(type, player, cpu) {
     const map = {
-      win: { cls: 'r-win', text: 'あなたの勝ち！' },
-      lose: { cls: 'r-lose', text: 'あなたの負け…' },
-      draw: { cls: 'r-draw', text: 'あいこ！' }
+      win: { cls: 'r-win', text: 'お前の勝ち！' },
+      lose: { cls: 'r-lose', text: '貴様の負け…' },
+      draw: { cls: 'r-draw', text: 'あいこ！つまり負けや！' }
     };
     resultEl.className = `result ${map[type].cls}`;
     resultEl.innerText = `${map[type].text}（あなた: ${player.name} / CPU: ${cpu.name}）`;
